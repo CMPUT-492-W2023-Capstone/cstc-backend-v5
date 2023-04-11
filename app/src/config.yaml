@@ -1,0 +1,30 @@
+input_config:
+  class_path: configuration.InputConfig
+  init_args:
+    media_source: /home/dekr0/videos/test.mp4
+    yolo_models: ../models/model.pt
+    device: "0"
+output_video_config:
+  class_path: configuration.OutputVideoConfig
+output_result_config:
+  class_path: configuration.OutputResultConfig
+  init_args:
+    save_csv: True
+    upload_period: 300
+algorithm_config:
+  class_path: configuration.AlgorithmConfig
+  init_args:
+    blur_frames_limit: 10
+    blur_thersold: 500
+    conf_thres: 0.7
+    iou_thres: 0.7
+    fp16: True
+    class_filter: [1, 2, 3, 5, 6, 7]
+    tracking_method: OCSORT
+    tracking_config: tracking_configs/ocsort.yaml
+    # Percentage [-1, 1]
+    # Turn this up if there are cases in which a vehicle will cover over another vehicle
+    # Turn this down if the camera is in high angle with respect with road
+    # (higher the angle => lower the percentage)
+    velocity_thersold_delta: -0.7
+legacy: False

@@ -1,0 +1,26 @@
+# Dependencies with comment at the end tell the version of Jetson is using
+jsonargparse
+firebase_admin
+easydict==1.10
+filterpy==1.4.5
+gdown==4.6.4 # 4.6.3
+gitpython
+ipython==8.11.0
+lap==0.4.0
+matplotlib==3.7.1 # 3.3.4
+numpy # Remark : In Jetson Nano, use 1.19.5 since it only run Python 3.6.9
+opencv-python==4.7.0.72 # Remark : In Jetson Nano, manually install 4.6.066
+pandas==1.5.3 # 1.1.5
+Pillow==9.4.0 # 8.4.0
+protobuf==4.22.1 # 3.19.6
+psutil == 5.9.4
+PyYAML == 6.0
+requests==2.28.2 # 2.27.1
+scipy # Remark : In Jetson Nano, use 1.5.4 since it only run Python 3.6.9
+seaborn==0.12.2 # 0.11.2
+sentry-sdk
+tensorboard==2.12.0 # 2.10.1
+thop==0.1.1.post2209072238
+torch # Remark : In Jetson Nano, use 1.10.0 since it only run on Python 3.6.9
+torchvision # Remark : In Jetson Nano, use 0.11.1 since torch is 1.10.0
+tqdm==4.65.0 # 4.64.1
