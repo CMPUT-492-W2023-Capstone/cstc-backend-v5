@@ -1,11 +1,9 @@
-import logging
-
 from enum import Enum
 from pathlib import Path
 
 from models.common import DetectMultiBackend
 from utils.dataloaders import LoadImages, LoadStreams
-from utils.general import check_file, check_img_size
+from utils.general import LOGGER, check_file, check_img_size
 from utils.torch_utils import select_device
 
 
@@ -55,7 +53,7 @@ class InputConfig:
             web_cam_ratio=None
     ):
         self.device = select_device(device)
-        logging.info(f'{device} selected')
+        LOGGER.info(f'{device} selected')
 
         self.media_source = check_file(media_source) \
             if _is_valid_file(media_source) and _is_valid_url(media_source) else media_source
@@ -69,14 +67,14 @@ class InputConfig:
 
         self.web_cam_ratio = web_cam_ratio
         if self.webcam_enable and self.web_cam_ratio is None:
-            logging.warning('Please specify aspect of a camera (example: 1920 x 1080) '
+            LOGGER.warning('Please specify aspect of a camera (example: 1920 x 1080) '
                             'in the config.yaml')
             exit(1)
 
     def load_dataset_model(self, inference_img_size, vid_frame_stride, dnn=False, fp16=False):
         model = DetectMultiBackend(self.yolo_models, device=self.device,
                                    dnn=dnn, data=None, fp16=fp16)
-        logging.info(f'{self.yolo_models} loaded')
+        LOGGER.info(f'{self.yolo_models} loaded')
 
         stride, pt = model.stride, model.pt
         inference_img_size = check_img_size(inference_img_size, s=stride)
@@ -85,16 +83,16 @@ class InputConfig:
             media_dataset = LoadStreams(self.media_source, auto=pt,
                                         img_size=inference_img_size,
                                         stride=stride, vid_stride=vid_frame_stride)
-            logging.info('Input frames from stream / camera')
+            LOGGER.info('Input frames from stream / camera')
         else:
             media_dataset = LoadImages(self.media_source, auto=pt,
                                        img_size=inference_img_size,
                                        stride=stride, vid_stride=vid_frame_stride)
-            logging.info('Input frames from media files')
+            LOGGER.info('Input frames from media files')
 
         media_dataset_size = 1 if self.webcam_enable else len(media_dataset)
 
-        logging.info(f'{media_dataset_size} media sources are detected and loaded')
+        LOGGER.info(f'{media_dataset_size} media sources are detected and loaded')
 
         return inference_img_size, media_dataset, media_dataset_size, model
 

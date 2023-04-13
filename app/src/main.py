@@ -1,14 +1,14 @@
 import asyncio
 import math
-import logging
 import platform
+from datetime import datetime
 from jsonargparse import CLI
 from pathlib import Path
 
 import cv2
 import torch
 
-from utils.general import scale_boxes
+from utils.general import LOGGER, scale_boxes
 from utils.plots import Annotator, colors
 
 import upload
@@ -214,12 +214,14 @@ def main(
            and len(current_frames) > 0 and len(prev_frames) > 0 \
            and len(tracking_task.tracker_hosts) == media_dataset_size
 
+    start = datetime.now()
+
     # OpenCV convention : im means image after modify, im0 means copy
     # of the image before modification (i.e. original image)
-    logging.info('Entering main loop')
+    LOGGER.info('Entering main loop')
     for frame_index, batch in enumerate(media_dataset):
         source_paths, im, im0s, video_capture = batch
-        logging.info(f'Start processing {frame_index} frame')
+        LOGGER.info(f'Start processing {frame_index} frame')
 
         # Blur detection
         # TODO: Blur detection does not work with camera
@@ -231,7 +233,7 @@ def main(
 
         detection_objs, im,  model = detection_task.get_detection_objs(
             im, model, algorithm_config.max_det)
-        logging.info(f'{len(detection_objs)} objects were detected')
+        LOGGER.info(f'{len(detection_objs)} objects were detected')
 
         for i, detection in enumerate(detection_objs):
             if input_config.webcam_enable:
@@ -241,7 +243,10 @@ def main(
                 im0 = im0s.copy()
                 source_path = source_paths
 
-            current_frames[i] = im0
+            try:
+                current_frames[i] = im0
+            except IndexError as e:
+                print(e)
 
             box_annotator = Annotator(
                 im0,
@@ -249,8 +254,12 @@ def main(
                 example=str(class_names)
             )
 
-            tracking_task.motion_compensation(i, current_frames[i], prev_frames[i])
-            logging.info('Applying motion_compensation')
+            try:
+                tracking_task.motion_compensation(i, current_frames[i], prev_frames[i])
+            except IndexError as e:
+                print(e)
+
+            LOGGER.info('Applying motion_compensation')
 
             if detection is None or not len(detection):
                 continue
@@ -261,7 +270,7 @@ def main(
                 im0.shape).round()
 
             tracker_outputs[i] = tracking_task.tracker_hosts[i].update(detection.cpu(), im0)
-            logging.info(f'{len(tracker_outputs[i])} objects were tracked')
+            LOGGER.info(f'{len(tracker_outputs[i])} objects were tracked')
 
             if len(tracker_outputs[i]) < 0:
                 continue
@@ -295,7 +304,7 @@ def main(
                               for v_id, candidate in candidates.items()
                               if candidate is not None}
 
-                logging.info(f'{num_new_candidate} candidate were selected')
+                LOGGER.info(f'{num_new_candidate} candidate were selected')
 
             if not input_config.webcam_enable and \
                     blur_frames_count != 0 and \
@@ -304,7 +313,11 @@ def main(
                 asyncio.run(upload.notify_blur())
                 blur_frames_count = 0
 
-            if frame_index != 0 and frame_index % output_result_config.upload_period == 0:
+            timestamp = datetime.now()
+
+            if (timestamp - start).seconds >= output_result_config.upload_period:
+                LOGGER.info(f'Total: {len(selective_candidates)}')
+                start = datetime.now()
                 if legacy:
                     EVENT_LOOP.run_until_complete(
                             upload.static_time(
@@ -323,7 +336,7 @@ def main(
                     ))
 
             stream_result(box_annotator, im0, source_path, streaming_windows)
-            logging.info(f'Finish processing {frame_index} frame')
+            LOGGER.info(f'Finish processing {frame_index} frame')
 
             prev_frames[i] = current_frames[i]
 

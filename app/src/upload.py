@@ -1,12 +1,12 @@
 import datetime
 import firebase_admin
 import json
-import logging
 import requests
 
 from firebase_admin import credentials
 from firebase_admin import firestore
 from pathlib import Path
+from utils.general import LOGGER
 
 
 firebase_admin.initialize_app(
@@ -37,17 +37,17 @@ async def real_time(traffic_datas, class_names, class_filters, save_csv):
     geo_response = requests.get(GPS)
     if geo_response.status_code == 200:
         geo_location = geo_response.text.strip().replace(",", ":").replace(".", ",")
-        logging.info(f'GPS Locate: {geo_response.status_code}. Geo Location: {geo_location}')
+        LOGGER.info(f'GPS Locate: {geo_response.status_code}. Geo Location: {geo_location}')
 
         response = requests.put(f'{RDB}/{geo_location}/{timestamp}.json', json=json_data)
         
         if response.status_code < 200 or response.status_code > 299:
-            logging.error(f'Upload: {response.status_code}. '
+            LOGGER.error(f'Upload: {response.status_code}. '
                           f'Proceed to write to local storage')
             local(json_data, timestamp)
-        logging.info(f'PUT Realtime database: {response.status_code}')
+        LOGGER.info(f'PUT Realtime database: {response.status_code}')
     else:
-        logging.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
+        LOGGER.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
         local(json_data, timestamp)
 
 
@@ -66,7 +66,7 @@ async def static_time(traffic_datas, class_names, class_filters, save_csv):
     geo_response = requests.get(GPS)
     if geo_response.status_code == 200:
         geo_location = geo_response.text.strip()
-        logging.info(f'GPS Locate: {geo_response.status_code}. Geo Location: {geo_location}')
+        LOGGER.info(f'GPS Locate: {geo_response.status_code}. Geo Location: {geo_location}')
 
         device_ref = DB.collection(u'devices').document(geo_location)
         device_data_ref = device_ref.collection(u'data').document(timestamp)
@@ -76,7 +76,7 @@ async def static_time(traffic_datas, class_names, class_filters, save_csv):
         if save_csv:
             local_csv(json_data, timestamp, class_names, class_filters)
     else:
-        logging.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
+        LOGGER.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
         local(json_data, timestamp)
 
 
@@ -90,10 +90,10 @@ async def notify_blur():
             }
         })
         if response.status_code < 200 or response.status_code > 299:
-            logging.error(f'Upload: {response.status_code}. '
+            LOGGER.error(f'Upload: {response.status_code}. '
                           f'Proceed to write to local storage')
     else:
-        logging.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
+        LOGGER.error(f'GPS Locate: {geo_response.status_code}. Proceed to write local storage')
 
 
 def local_csv(json_data, timestamp, class_names, class_filters):
@@ -117,7 +117,7 @@ def local(json_data, timestamp):
             try:
                 existence_data = json.load(f)
             except ValueError:
-                logging.error('Invalid json data. Proceed to override')
+                LOGGER.error('Invalid json data. Proceed to override')
                 existence_data = {}
     else:
         existence_data = {}
